@@ -1,4 +1,4 @@
-const { Client, Events, GatewayIntentBits, EmbedBuilder, Rest, Routes } = require('discord.js');
+const { Client, Events, GatewayIntentBits, EmbedBuilder, REST, Routes } = require('discord.js');
 const cron = require('node-cron');
 const mongoose = require('mongoose');
 const http = require('http'); //24시간 깨워두기
