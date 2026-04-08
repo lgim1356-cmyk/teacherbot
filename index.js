@@ -71,6 +71,9 @@ client.once(Events.ClientReady, () => {
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
 
+    // 추가: 봇이 메시지를 받으면 무조건 터미널에 출력하게 함
+    console.log(`[메시지 수신]: ${message.author.username} - ${message.content}`);
+
     const userId = message.author.id;
 
     // 1. 유저 정보 찾아오기
