@@ -91,28 +91,31 @@ client.on('messageCreate', async (message) => {
     }
 
     // [!제출]
-    if (message.content === '!제출') {
+    if (message.content.trim() === '!제출') {
         if (!user.submitted) user.totalCount += 1;
         user.submitted = true;
         await user.save();
-        message.reply('✅ 이번 주 숙제 제출 완료!');
+        message.reply('✅ 이번 주 숙제 제출 완료! 수고하셨어요.');
     }
 
     // [!현황]
-    if (message.content === '!현황') {
+    if (message.content.trim() === '!현황') {
         const status = user.submitted ? "제출 완료 ✅" : "미제출 ❌";
         const statusEmbed = new EmbedBuilder()
             .setColor(76e665) // 녹색
             .setTitle(`📝 ${message.author.username}님의 현황판`)
             .addFields(
-                { name: '🎯 나의 목표', value: user.goal, inline: true },
+                { name: '🎯 나의 목표', value: user.goal || "목표 설정", inline: true },
                 { name: '📊 제출 상태', value: status, inline: true },
                 { name: '🏆 누적 제출', value: `${user.totalCount || 0}회`, inline: false },
                 { name: '⛔ 이번 달 미제출', value: `${user.missCount}회`, inline: false },
                 { name: '❗ 추가 숙제', value: `${user.penaltyHomework}개`, inline: false }
             )
 
-        message.reply({ embeds: [statusEmbed] }); // s 붙였습니다!
+        message.reply({ embeds: [statusEmbed] }).catch(err => {
+            console.error("임베드 전송 에러:", err);
+            message.reply("현황판을 불러오는 중에 문제가 생겼어요. 목표가 설정되어 있는지 확인해 보세요!");
+        });
     }
 
     // [주제!]
