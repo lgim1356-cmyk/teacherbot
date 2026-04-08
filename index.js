@@ -112,6 +112,9 @@ client.once(Events.ClientReady, async () => {
 client.on('interactionCreate', async (interaction) => {
     if (interaction.isChatInputCommand()) return;
 
+    // 생각중 상태로 만들기
+    await interaction.deferReply();
+
     const { commandName, user: discordUser } = interaction;
     const userId = discordUser.id;
 
@@ -127,7 +130,7 @@ client.on('interactionCreate', async (interaction) => {
         const goal = interaction.options.getString('내용'); //입력값 가져오기
         user.goal = goal;
         await user.save();
-        await interaction.reply(`🎯 목표 설정 완료: **${user.goal}**`);
+        await interaction.editReply(`🎯 목표 설정 완료: **${user.goal}**`);
     }
 
     // [/제출]
@@ -136,9 +139,9 @@ client.on('interactionCreate', async (interaction) => {
             user.totalCount += 1;
             user.submitted = true;
             await user.save();
-            await interaction.reply('✅ 이번 주 숙제 제출 완료! 수고하셨어요.');
+            await interaction.editReply('✅ 이번 주 숙제 제출 완료! 수고하셨어요.');
         } else {
-            await interaction.reply('이미 이번 주 숙제를 제출하셨습니다.');
+            await interaction.editReply('이미 이번 주 숙제를 제출하셨습니다.');
         }
     }
 
@@ -179,7 +182,7 @@ client.on('interactionCreate', async (interaction) => {
             value: '세 단어가 모두 들어간 하나의 장면을 그려도 좋고,\n가장 마음에 드는 단어 하나만 골라 집중해도 좋습니다!' 
         })
 
-    await interaction.reply({ embeds: [topicEmbed] });
+    await interaction.editReply({ embeds: [topicEmbed] });
     }
 });
 
