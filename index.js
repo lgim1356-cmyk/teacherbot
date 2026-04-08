@@ -45,7 +45,7 @@ const topics = [
     "시간", "인외", "SF", "직업", "역사", "중년"
 ];
 
-client.once(Events.ClientReady, () => {
+client.once(Events.ClientReady, async () => {
     console.log(`선생님 봇이 출근했습니다!`);
 
     // 명령어 리스트 정의
