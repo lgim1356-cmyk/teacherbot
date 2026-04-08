@@ -1,4 +1,4 @@
-const { Client, Events, GatewayIntentBits, EmbedBuilder } = require('discord.js');
+const { Client, Events, GatewayIntentBits, EmbedBuilder, Rest, Routes } = require('discord.js');
 const cron = require('node-cron');
 const mongoose = require('mongoose');
 const http = require('http'); //24시간 깨워두기
@@ -46,7 +46,48 @@ const topics = [
 ];
 
 client.once(Events.ClientReady, () => {
-    console.log(`선생님 봇이 출근했습니다! (단일 서버 모드)`);
+    console.log(`선생님 봇이 출근했습니다!`);
+
+    // 명령어 리스트 정의
+    const commands = [
+        {
+            name: '현황',
+            description: '나의 숙제 현황을 확인합니다.',
+        },
+        {
+            name: '제출',
+            description: '이번 주 숙제를 제출합니다.',
+        },
+        {
+            name: '목표',
+            description: '나의 목표를 설정합니다.',
+            options: [
+                {
+                    name: '내용',
+                    description: '설정할 목표 내용을 입력하세요.',
+                    type: 3, // STRING 타입
+                    required: true,
+                }
+            ]
+        },
+        {
+            name: '주제',
+            description: '오늘의 추천 키워드 3개를 뽑아줍니다.',
+        }
+    ];
+
+    const rest = new REST({ version: '10' }).setToken(token);
+
+    try {
+        console.log('🔄 슬래시 명령어 등록 중...');
+        await rest.put(
+            Routes.applicationCommands(client.user.id),
+            { body: commands },
+        );
+        console.log('✅ 슬래시 명령어 등록 완료!');
+    } catch (error) {
+        console.error(error);
+    }
 
     // [스케줄러 1] 매주 일요일 밤 23:59 정산
     cron.schedule('59 23 * * 0', async () => {
@@ -68,13 +109,11 @@ client.once(Events.ClientReady, () => {
 
 });
 
-client.on('messageCreate', async (message) => {
-    if (message.author.bot) return;
+client.on('interactionCreate', async (interaction) => {
+    if (interaction.isChatInputCommand()) return;
 
-    // 추가: 봇이 메시지를 받으면 무조건 터미널에 출력하게 함
-    console.log(`[메시지 수신]: ${message.author.username} - ${message.content}`);
-
-    const userId = message.author.id;
+    const { commandName, user: discordUser } = interaction;
+    const userId = discordUser.id;
 
     // 1. 유저 정보 찾아오기
     let user = await User.findOne({ userId: userId });
@@ -83,27 +122,32 @@ client.on('messageCreate', async (message) => {
         await user.save();
     }
 
-    // [!목표]
-    if (message.content.startsWith('!목표 ')) {
-        user.goal = message.content.replace('!목표', '');
+    // [/목표]
+    if (commandName === '목표 ') {
+        const goal = interaction.options.getString('내용'); //입력값 가져오기
+        user.goal = goal;
         await user.save();
-        message.reply(`🎯 목표 설정 완료: **${user.goal}**`);
+        await interaction.reply(`🎯 목표 설정 완료: **${user.goal}**`);
     }
 
-    // [!제출]
-    if (message.content.trim() === '!제출') {
-        if (!user.submitted) user.totalCount += 1;
-        user.submitted = true;
-        await user.save();
-        message.reply('✅ 이번 주 숙제 제출 완료! 수고하셨어요.');
+    // [/제출]
+    if (commandName === '제출') {
+        if (!user.submitted) {
+            user.totalCount += 1;
+            user.submitted = true;
+            await user.save();
+            await interaction.reply('✅ 이번 주 숙제 제출 완료! 수고하셨어요.');
+        } else {
+            await interaction.reply('이미 이번 주 숙제를 제출하셨습니다.');
+        }
     }
 
-    // [!현황]
-    if (message.content.trim() === '!현황') {
+    // [/현황]
+    if (commandName === '현황') {
         const status = user.submitted ? "제출 완료 ✅" : "미제출 ❌";
         const statusEmbed = new EmbedBuilder()
-            .setColor(76e665) // 녹색
-            .setTitle(`📝 ${message.author.username}님의 현황판`)
+            .setColor(0x76e665) // 녹색
+            .setTitle(`📝 ${discordUser.username}님의 현황판`)
             .addFields(
                 { name: '🎯 나의 목표', value: user.goal || "목표 설정", inline: true },
                 { name: '📊 제출 상태', value: status, inline: true },
@@ -118,8 +162,8 @@ client.on('messageCreate', async (message) => {
         });
     }
 
-    // [주제!]
-    if (message.content === '!주제') {
+    // [/주제]
+    if (commandName === '주제') {
     // 1. 리스트를 무작위로 섞기
     const shuffled = [...topics].sort(() => 0.5 - Math.random());
     
@@ -135,7 +179,7 @@ client.on('messageCreate', async (message) => {
             value: '세 단어가 모두 들어간 하나의 장면을 그려도 좋고,\n가장 마음에 드는 단어 하나만 골라 집중해도 좋습니다!' 
         })
 
-    message.reply({ embeds: [topicEmbed] });
+    await interaction.reply({ embeds: [topicEmbed] });
     }
 });
 
